@@ -54,6 +54,7 @@ statistic_edgetime_plot.py
 statistic_plot.py
 data/
 *.md
+!README.md
 collected_results*/
 dist/
 *.txt
