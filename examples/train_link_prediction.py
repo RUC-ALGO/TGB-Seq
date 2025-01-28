@@ -152,7 +152,7 @@ if __name__ == "__main__":
         optimizer = create_optimizer(model=model, optimizer_name=args.optimizer,
                                      learning_rate=args.learning_rate, weight_decay=args.weight_decay)
 
-        save_model_folder = f"{args.save_model_path}/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
+        save_model_folder = f"{args.save_model_path}/saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
         if not os.path.exists(save_model_folder):
             os.makedirs(save_model_folder)
 
@@ -304,7 +304,6 @@ if __name__ == "__main__":
                 val_metric_indicator.append(
                     (metric_name, val_metrics[metric_name], True))
             early_stop = early_stopping.step(val_metric_indicator, model)
-
             if early_stop:
                 break
 
@@ -328,7 +327,7 @@ if __name__ == "__main__":
         # reload the model, so that the memory bank is reloaded
         early_stopping.load_checkpoint(model, map_location='cpu')
         model = convert_to_gpu(model, device=args.device)
-        logger.info(f'test loss: {np.mean(test_losses):.8f}')
+        # logger.info(f'test loss: {np.mean(test_losses):.8f}')
         for metric_name in test_metrics.keys():
             logger.info(f'test {metric_name}, {test_metrics[metric_name]:.8f}')
         test_metrics_multi_negs = evaluate_model_link_prediction_multi_negs(model_name=args.model_name,
