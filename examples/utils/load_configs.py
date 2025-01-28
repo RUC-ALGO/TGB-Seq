@@ -49,11 +49,11 @@ def get_link_prediction_args(is_evaluation: bool = False):
     parser.add_argument('--num_runs', type=int, default=3, help='number of runs')
     parser.add_argument('--seed', type=int, default=0, help='seed')
     parser.add_argument('--test_interval_epochs', type=int, default=10, help='how many epochs to perform testing once')
-    parser.add_argument('--is_bipartite', type=bool, default=False, help='the dataset is bipartite')
+    parser.add_argument('--is_bipartite', action='store_true', help='the dataset is bipartite')
     parser.add_argument('--negative_sample_strategy', type=str, default='random', choices=['random', 'historical', 'inductive'], help='strategy for the negative edge sampling')
     parser.add_argument('--load_best_configs', action='store_true', default=False, help='whether to load the best configurations')
     parser.add_argument('--use_edge_feat', action='store_true', default=False, help='whether to use edge feat')
-    parser.add_argument('--load_pretrained', action='store_true', default=False)
+    parser.add_argument('--load_pretrained', action='store_true', help='whether to use the pretrained model at save_model_path', default=False)
     parser.add_argument('--use_node_feat', action='store_true', default=False, help='whether to use node feat')
     try:
         args = parser.parse_args()
