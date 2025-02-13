@@ -51,29 +51,9 @@ def evaluate_model_link_prediction(model_name: str, model: nn.Module, neighbor_s
                 evaluate_data.node_interact_times[evaluate_data_indices], evaluate_data.edge_ids[evaluate_data_indices]
             if model_name in ['JODIE', 'DyRep', 'TGN']:
                 if mode in ['test']:
-                    to_update_mask=evaluate_data.split[evaluate_data_indices]!=2
                     to_test_mask=evaluate_data.split[evaluate_data_indices]==2
                 else:
-                    to_update_mask=np.logical_and(evaluate_data.split[evaluate_data_indices]!=1,evaluate_data.split[evaluate_data_indices]!=2)
                     to_test_mask=evaluate_data.split[evaluate_data_indices]==1
-                update_batch_src_node_ids=batch_src_node_ids[to_update_mask]  
-                update_batch_dst_node_ids=batch_dst_node_ids[to_update_mask]
-                update_batch_node_interact_times=batch_node_interact_times[to_update_mask]
-                update_batch_edge_ids=batch_edge_ids[to_update_mask]
-                # we set the neg_dst_node_ids as the same as the dst_node_ids, since we do not use the results. All we want is to update the memories
-                if to_update_mask.sum()>0:
-                    model[0].compute_src_dst_node_temporal_embeddings(src_node_ids=update_batch_src_node_ids,
-                                                                          dst_node_ids=update_batch_dst_node_ids,
-                                                                          neg_dst_node_ids=update_batch_dst_node_ids,
-                                                                          node_interact_times=np.concatenate([update_batch_node_interact_times, update_batch_node_interact_times, update_batch_node_interact_times], axis=0),
-                                                                          edge_ids=update_batch_edge_ids,
-                                                                          num_neighbors=num_neighbors)
-                if to_test_mask.sum()==0:
-                    continue
-                batch_src_node_ids=batch_src_node_ids[to_test_mask]
-                batch_dst_node_ids=batch_dst_node_ids[to_test_mask]
-                batch_node_interact_times=batch_node_interact_times[to_test_mask]
-                batch_edge_ids=batch_edge_ids[to_test_mask]
             if evaluate_neg_edge_sampler.negative_sample_strategy != 'random':
                 batch_neg_src_node_ids, batch_neg_dst_node_ids = evaluate_neg_edge_sampler.sample(size=len(batch_src_node_ids),
                                                                                                   batch_src_node_ids=batch_src_node_ids,
@@ -162,11 +142,15 @@ def evaluate_model_link_prediction(model_name: str, model: nn.Module, neighbor_s
             else:
                 raise ValueError(f"Wrong value for model_name {model_name}!")
             # get positive and negative probabilities, shape (batch_size, )
+            if to_test_mask.sum() == 0:
+                continue
             positive_probabilities = model[1](
                 input_1=batch_src_node_embeddings, input_2=batch_dst_node_embeddings).squeeze(dim=-1).sigmoid()
             negative_probabilities = model[1](
                 input_1=batch_neg_src_node_embeddings, input_2=batch_neg_dst_node_embeddings).squeeze(dim=-1).sigmoid()
-
+            if model_name in ['JODIE', 'DyRep', 'TGN']:
+                positive_probabilities = positive_probabilities[to_test_mask]
+                negative_probabilities = negative_probabilities[to_test_mask]
             predicts = torch.cat(
                 [positive_probabilities, negative_probabilities], dim=0)
             labels = torch.cat([torch.ones_like(

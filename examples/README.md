@@ -35,6 +35,8 @@ We optimized the implementation of memory-based methods, including JODIE, DyRep,
 
 These revisions significantly reduce the training time for memory-based methods, particularly on large datasets. The leaderboard results provided by TGB-Seq team are based on this optimized implementation of DyGLib.
 
+**Attention**: Since we store only the most recent raw message for each node, we treat it directly as part of the model parameters. As a result, there is no need to save or load raw messages when saving or loading the model.
+
 ### 2. DyGFormer
 
 We provide an efficient implementation of the `NeighborCooccurrenceEncoder::count_nodes_appearances` function in the DyGFormer model for bipartite datasets. To use this implementation, you can enable the bipartite mode by adding `is_bipartite` to your commands. If you prefer the original implementation, discard `is_bipartite`.

@@ -11,7 +11,7 @@ import json
 
 from models.EdgeBank import edge_bank_link_prediction
 from utils.utils import set_random_seed
-from utils.utils import NegativeEdgeSampler, NeighborSampler
+from utils.utils import NegativeEdgeSampler, NeighborSampler, multi_negative_sampler
 from utils.DataLoader import Data
 from tgb_seq.LinkPred.evaluator import Evaluator 
 
@@ -57,51 +57,23 @@ def evaluate_model_link_prediction_multi_negs(model_name: str, model: nn.Module,
             batch_src_node_ids, batch_dst_node_ids, batch_node_interact_times, batch_edge_ids = \
                 evaluate_data.src_node_ids[evaluate_data_indices],  evaluate_data.dst_node_ids[evaluate_data_indices], \
                 evaluate_data.node_interact_times[evaluate_data_indices], evaluate_data.edge_ids[evaluate_data_indices]
-            if model_name in ['JODIE', 'DyRep', 'TGN']:
-                to_update_mask=evaluate_data.split[evaluate_data_indices]!=2
-                to_test_mask=evaluate_data.split[evaluate_data_indices]==2
-                update_batch_src_node_ids=batch_src_node_ids[to_update_mask]  
-                update_batch_dst_node_ids=batch_dst_node_ids[to_update_mask]
-                update_batch_node_interact_times=batch_node_interact_times[to_update_mask]
-                update_batch_edge_ids=batch_edge_ids[to_update_mask]
-                # we set the neg_dst_node_ids as the same as the dst_node_ids, since we do not use the results. All we want is to update the memories
-                if to_update_mask.sum()>0:
-                    model[0].compute_src_dst_node_temporal_embeddings(src_node_ids=update_batch_src_node_ids,
-                                                                          dst_node_ids=update_batch_dst_node_ids,
-                                                                          neg_dst_node_ids=update_batch_dst_node_ids,
-                                                                          node_interact_times=np.concatenate([update_batch_node_interact_times, update_batch_node_interact_times, update_batch_node_interact_times], axis=0),
-                                                                          edge_ids=update_batch_edge_ids,
-                                                                          num_neighbors=num_neighbors)
-                if to_test_mask.sum()==0:
-                    continue
-                batch_src_node_ids=batch_src_node_ids[to_test_mask]
-                batch_dst_node_ids=batch_dst_node_ids[to_test_mask]
-                batch_node_interact_times=batch_node_interact_times[to_test_mask]
-                batch_edge_ids=batch_edge_ids[to_test_mask]
-                evaluate_data_indices = np.arange(neg_samples_idx, neg_samples_idx + to_test_mask.sum())
-                neg_samples_idx += to_test_mask.sum()
+            to_test_mask=evaluate_data.split[evaluate_data_indices]==2
+            test_neg_sample_idx = np.arange(neg_samples_idx, neg_samples_idx + to_test_mask.sum())
+            neg_samples_idx += to_test_mask.sum()
             repeated_batch_src_node_ids = np.repeat(batch_src_node_ids, repeats=num_negs, axis=0)
+            repeated_batch_dst_node_ids = np.repeat(batch_dst_node_ids, repeats=num_negs, axis=0)
+            repeated_batch_dst_node_ids_reshape = repeated_batch_dst_node_ids.reshape(-1, num_negs)
+            original_batch_size = batch_src_node_ids.shape[0]
             if evaluate_data.neg_samples is not None:
-                batch_neg_dst_node_ids = evaluate_data.neg_samples[evaluate_data_indices].flatten()
+                # since tgb-seq neg samples are only provided for test sample, 
+                test_neg_dst_node_ids = evaluate_data.neg_samples[test_neg_sample_idx]
+                not_test_neg_dst_node_ids = multi_negative_sampler(evaluate_neg_edge_sampler, repeated_batch_dst_node_ids_reshape[~to_test_mask],num_negs)
+                batch_neg_dst_node_ids = np.zeros((original_batch_size, num_negs), dtype=np.int32)
+                batch_neg_dst_node_ids[to_test_mask] = test_neg_dst_node_ids
+                batch_neg_dst_node_ids[~to_test_mask] = not_test_neg_dst_node_ids
             else:
-                _, batch_neg_dst_node_ids = evaluate_neg_edge_sampler.sample(
-                    size=len(repeated_batch_src_node_ids))
-                repeated_batch_dst_node_ids = np.repeat(
-                    batch_dst_node_ids, repeats=num_negs, axis=0)
-                # collision check
-                pos_dst_node_ids_reshape = repeated_batch_dst_node_ids.reshape(-1, num_negs)
-                batch_neg_dst_node_ids_reshape = batch_neg_dst_node_ids.reshape(
-                    -1, num_negs)
-                mask = pos_dst_node_ids_reshape == batch_neg_dst_node_ids_reshape
-                while np.any(mask):
-                    mask_rows = np.where(mask)[0]
-                    num_mask_rows = len(mask_rows)
-                    _, tmp_negs = evaluate_neg_edge_sampler.sample(
-                        size=num_mask_rows*num_negs)
-                    batch_neg_dst_node_ids_reshape[mask_rows]=tmp_negs.reshape(-1,num_negs)
-                    mask = pos_dst_node_ids_reshape == batch_neg_dst_node_ids_reshape
-                batch_neg_dst_node_ids=batch_neg_dst_node_ids_reshape.reshape(-1)
-            
+                batch_neg_dst_node_ids=multi_negative_sampler(evaluate_neg_edge_sampler, repeated_batch_dst_node_ids_reshape, num_negs)
+            batch_neg_dst_node_ids=batch_neg_dst_node_ids.flatten()
             repeated_batch_node_interact_times = np.repeat(batch_node_interact_times, repeats=num_negs, axis=0)
 
             # we need to compute for positive and negative edges respectively, because the new sampling strategy (for evaluation) allows the negative source nodes to be
@@ -181,13 +153,17 @@ def evaluate_model_link_prediction_multi_negs(model_name: str, model: nn.Module,
                                                                       node_interact_times=repeated_batch_node_interact_times)
             else:
                 raise ValueError(f"Wrong value for model_name {model_name}!")
-
+            if to_test_mask.sum() == 0:
+                continue
             positive_probabilities = model[1](
                 input_1=batch_src_node_embeddings, input_2=batch_dst_node_embeddings).squeeze(dim=-1).sigmoid().cpu().numpy()
             # get negative probabilities, Tensor, shape (batch_size * num_negative_samples_per_node, )
             negative_probabilities = model[1](
                 input_1=batch_neg_src_node_embeddings, input_2=batch_neg_dst_node_embeddings).squeeze(dim=-1).sigmoid().cpu().numpy()
-
+            if to_test_mask.sum() == 0:
+                continue
+            positive_probabilities = positive_probabilities[to_test_mask]
+            negative_probabilities = negative_probabilities.reshape(-1,num_negs)[to_test_mask]
             evaluate_metrics.extend(evaluator.eval(positive_probabilities,negative_probabilities))
             # print(f'evaluate for the {batch_idx + 1}-th batch')
 

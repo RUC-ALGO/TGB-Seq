@@ -70,8 +70,8 @@ class EarlyStopping(object):
         """
         self.logger.info(f"save model {self.save_model_path}")
         torch.save(model.state_dict(), self.save_model_path)
-        if self.model_name in ['JODIE', 'DyRep', 'TGN']:
-            torch.save(model[0].memory_bank.node_raw_messages, self.save_model_nonparametric_data_path)
+        # if self.model_name in ['JODIE', 'DyRep', 'TGN']:
+        #     torch.save(model[0].memory_bank.node_raw_messages, self.save_model_nonparametric_data_path)
 
     def load_checkpoint(self, model: nn.Module, map_location: str = None):
         """
@@ -83,7 +83,9 @@ class EarlyStopping(object):
         if os.path.exists(self.save_model_path):
             self.logger.info(f"load model {self.save_model_path}")
             model.load_state_dict(torch.load(self.save_model_path, map_location=map_location))
-            if self.model_name in ['JODIE', 'DyRep', 'TGN']:
-                model[0].memory_bank.node_raw_messages = torch.load(self.save_model_nonparametric_data_path, map_location=map_location)
+            # if self.model_name in ['JODIE', 'DyRep', 'TGN']:
+            #     model[0].memory_bank.node_raw_messages = torch.load(self.save_model_nonparametric_data_path, map_location=map_location)
+            return 0
         else:
             self.logger.info(f"no model found at {self.save_model_path}, re-training from scratch")
+            return -1

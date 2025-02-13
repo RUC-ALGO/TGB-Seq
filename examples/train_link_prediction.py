@@ -152,7 +152,7 @@ if __name__ == "__main__":
         optimizer = create_optimizer(model=model, optimizer_name=args.optimizer,
                                      learning_rate=args.learning_rate, weight_decay=args.weight_decay)
 
-        save_model_folder = f"{args.save_model_path}/saved_models/{args.model_name}/{args.dataset_name}/{args.save_model_name}/"
+        save_model_folder = f"{args.save_model_path}/{args.dataset_name}/{args.model_name}/{args.save_model_name}/"
         if not os.path.exists(save_model_folder):
             os.makedirs(save_model_folder)
 
@@ -256,7 +256,7 @@ if __name__ == "__main__":
                 positive_probabilities = model[1](
                     input_1=batch_src_node_embeddings, input_2=batch_dst_node_embeddings).squeeze(dim=-1).sigmoid()
                 negative_probabilities = model[1](
-                    input_1=batch_src_node_embeddings, input_2=batch_neg_dst_node_embeddings).squeeze(dim=-1).sigmoid()
+                    input_1=batch_neg_src_node_embeddings, input_2=batch_neg_dst_node_embeddings).squeeze(dim=-1).sigmoid()
                 predicts = torch.cat(
                     [positive_probabilities, negative_probabilities], dim=0)
                 labels = torch.cat([torch.ones_like(
@@ -308,9 +308,9 @@ if __name__ == "__main__":
                 break
 
         # load the best model
-        early_stopping.load_checkpoint(model, map_location='cpu')
+        if early_stopping.load_checkpoint(model, map_location='cpu') < 0:
+            sys.exit()
         model = convert_to_gpu(model, device=args.device)
-        # evaluate the best model
         logger.info(f'get final performance on dataset {args.dataset_name}...')
         test_metrics={}
         # For memory based models, we need to deal with their val set first in the evaluate_model_link_prediction function.
@@ -359,7 +359,7 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = f"./saved_results/{args.model_name}/{args.dataset_name}"
+        save_result_folder = f"./saved_results/{args.dataset_name}{args.model_name}/"
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
             save_result_folder, f"{args.save_model_name}.json")

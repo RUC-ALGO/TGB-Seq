@@ -494,3 +494,20 @@ class NegativeEdgeSampler(object):
         :return:
         """
         self.random_state = np.random.RandomState(self.seed)
+
+def multi_negative_sampler(evaluate_neg_edge_sampler, repeated_batch_dst_node_ids, num_negs):
+    _size = len(repeated_batch_dst_node_ids)
+    _, batch_neg_dst_node_ids = evaluate_neg_edge_sampler.sample(
+                    size=_size*num_negs)
+    # collision check
+    pos_dst_node_ids_reshape = repeated_batch_dst_node_ids
+    batch_neg_dst_node_ids_reshape = batch_neg_dst_node_ids.reshape(-1, num_negs)
+    mask = pos_dst_node_ids_reshape == batch_neg_dst_node_ids_reshape
+    while np.any(mask):
+        mask_rows = np.where(mask)[0]
+        num_mask_rows = len(mask_rows)
+        _, tmp_negs = evaluate_neg_edge_sampler.sample(
+            size=num_mask_rows*num_negs)
+        batch_neg_dst_node_ids_reshape[mask_rows]=tmp_negs.reshape(-1,num_negs)
+        mask = pos_dst_node_ids_reshape == batch_neg_dst_node_ids_reshape
+    return batch_neg_dst_node_ids_reshape
