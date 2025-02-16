@@ -57,7 +57,7 @@ if __name__ == "__main__":
     test_neg_edge_sampler = NegativeEdgeSampler(
         src_node_ids=full_data.src_node_ids, dst_node_ids=full_data.dst_node_ids, seed=2)
     # new_node_test_neg_edge_sampler = NegativeEdgeSampler(src_node_ids=new_node_test_data.src_node_ids, dst_node_ids=new_node_test_data.dst_node_ids, seed=3)
-    if args.model_name in ['JODIE', 'DyRep', 'TGN']:
+    if args.model_name in ['JODIE', 'DyRep', 'TGN'] and args.dataset_name in ['Patent']:
         test_data = val_test_data
         val_data = val_test_data
     # get data loaders
@@ -217,7 +217,7 @@ if __name__ == "__main__":
                                                                           node_interact_times=batch_node_interact_times,
                                                                           edge_ids=batch_edge_ids,
                                                                           num_neighbors=args.num_neighbors)
-
+                    batch_neg_src_node_embeddings = batch_src_node_embeddings
                 elif args.model_name in ['GraphMixer']:
                     # get temporal embedding of source and destination nodes
                     # two Tensors, with shape (batch_size, node_feat_dim)
