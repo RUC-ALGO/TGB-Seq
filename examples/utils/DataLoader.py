@@ -173,11 +173,11 @@ def get_link_prediction_data(dataset_name: str, val_ratio: float = 0.15, test_ra
         test_mask = node_interact_times > test_time
 
         # validation and test data
-        val_data = Data(src_node_ids=src_node_ids[val_mask], dst_node_ids=dst_node_ids[val_mask],
-                        node_interact_times=node_interact_times[val_mask], edge_ids=edge_ids[val_mask], labels=labels[val_mask])
+        val_split = np.full(val_mask.sum(),1)
+        val_data = Data(src_node_ids=src_node_ids[val_mask], dst_node_ids=dst_node_ids[val_mask],node_interact_times=node_interact_times[val_mask], edge_ids=edge_ids[val_mask], labels=labels[val_mask],split=val_split)
         
-        test_data = Data(src_node_ids=src_node_ids[test_mask], dst_node_ids=dst_node_ids[test_mask],
-                        node_interact_times=node_interact_times[test_mask], edge_ids=edge_ids[test_mask], labels=labels[test_mask])
+        test_split = np.full(test_mask.sum(),2)
+        test_data = Data(src_node_ids=src_node_ids[test_mask], dst_node_ids=dst_node_ids[test_mask],node_interact_times=node_interact_times[test_mask], edge_ids=edge_ids[test_mask], labels=labels[test_mask],neg_samples=test_ns, split=test_split)
         
         # We only use Patent's val_test_data since its source nodes interact with all their neighbors at the same timestamps
         val_test_data = None

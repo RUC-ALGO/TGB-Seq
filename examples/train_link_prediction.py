@@ -57,7 +57,7 @@ if __name__ == "__main__":
     test_neg_edge_sampler = NegativeEdgeSampler(
         src_node_ids=full_data.src_node_ids, dst_node_ids=full_data.dst_node_ids, seed=2)
     # new_node_test_neg_edge_sampler = NegativeEdgeSampler(src_node_ids=new_node_test_data.src_node_ids, dst_node_ids=new_node_test_data.dst_node_ids, seed=3)
-    if args.model_name in ['JODIE', 'DyRep', 'TGN'] and args.dataset_name in ['Patent']:
+    if args.dataset_name in ['Patent']:
         test_data = val_test_data
         val_data = val_test_data
     # get data loaders

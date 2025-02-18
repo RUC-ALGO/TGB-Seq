@@ -49,11 +49,10 @@ def evaluate_model_link_prediction(model_name: str, model: nn.Module, neighbor_s
             batch_src_node_ids, batch_dst_node_ids, batch_node_interact_times, batch_edge_ids = \
                 evaluate_data.src_node_ids[evaluate_data_indices],  evaluate_data.dst_node_ids[evaluate_data_indices], \
                 evaluate_data.node_interact_times[evaluate_data_indices], evaluate_data.edge_ids[evaluate_data_indices]
-            if model_name in ['JODIE', 'DyRep', 'TGN']:
-                if mode in ['test']:
-                    to_test_mask=evaluate_data.split[evaluate_data_indices]==2
-                else:
-                    to_test_mask=evaluate_data.split[evaluate_data_indices]==1
+            if mode in ['test']:
+                to_test_mask=evaluate_data.split[evaluate_data_indices]==2
+            else:
+                to_test_mask=evaluate_data.split[evaluate_data_indices]==1
             if evaluate_neg_edge_sampler.negative_sample_strategy != 'random':
                 batch_neg_src_node_ids, batch_neg_dst_node_ids = evaluate_neg_edge_sampler.sample(size=len(batch_src_node_ids),
                                                                                                   batch_src_node_ids=batch_src_node_ids,
@@ -148,9 +147,8 @@ def evaluate_model_link_prediction(model_name: str, model: nn.Module, neighbor_s
                 input_1=batch_src_node_embeddings, input_2=batch_dst_node_embeddings).squeeze(dim=-1).sigmoid()
             negative_probabilities = model[1](
                 input_1=batch_neg_src_node_embeddings, input_2=batch_neg_dst_node_embeddings).squeeze(dim=-1).sigmoid()
-            if model_name in ['JODIE', 'DyRep', 'TGN']:
-                positive_probabilities = positive_probabilities[to_test_mask]
-                negative_probabilities = negative_probabilities[to_test_mask]
+            positive_probabilities = positive_probabilities[to_test_mask]
+            negative_probabilities = negative_probabilities[to_test_mask]
             predicts = torch.cat(
                 [positive_probabilities, negative_probabilities], dim=0)
             labels = torch.cat([torch.ones_like(
