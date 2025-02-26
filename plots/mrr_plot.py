@@ -13,8 +13,8 @@ adjusted_mrr_values = {
     'Wikipedia': {'EdgeBank': 78.10, 'GraphMixer': 72.14, 'DyGFormer': 84.64, 'SGNN-HN': 83.83},
     'Reddit': {'EdgeBank': 78.08, 'GraphMixer': 71.73, 'DyGFormer': 83.57, 'SGNN-HN': 89.01},
     # 'Yelp': {'EdgeBank': 9.77, 'GraphMixer': 33.96, 'DyGFormer': 21.68, 'SGNN-HN': 69.34},
-    'GoogleLocal': {'EdgeBank': 1.96, 'GraphMixer': 21.31, 'DyGFormer': 18.39, 'SGNN-HN': 64.59},
-    'ML-20M': {'EdgeBank': 1.82, 'GraphMixer': 21.97, 'DyGFormer': None, 'SGNN-HN': 34.80},
+    'GoogleLocal': {'EdgeBank': 1.96, 'GraphMixer': 21.31, 'DyGFormer': 18.39, 'SGNN-HN': 62.88},
+    'ML-20M': {'EdgeBank': 1.82, 'GraphMixer': 21.97, 'DyGFormer': None, 'SGNN-HN': 33.12},
     # 'Taobao': {'EdgeBank': None, 'GraphMixer': 31.54, 'DyGFormer': None, 'SGNN-HN': 63.37}  # None represents missing data
 }
 
