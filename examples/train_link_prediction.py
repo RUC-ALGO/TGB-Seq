@@ -359,7 +359,7 @@ if __name__ == "__main__":
         }
         result_json = json.dumps(result_json, indent=4)
 
-        save_result_folder = f"./saved_results/{args.dataset_name}{args.model_name}/"
+        save_result_folder = f"./saved_results/{args.dataset_name}/{args.model_name}/"
         os.makedirs(save_result_folder, exist_ok=True)
         save_result_path = os.path.join(
             save_result_folder, f"{args.save_model_name}.json")
